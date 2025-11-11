@@ -1,7 +1,6 @@
-import type { Contact, Meeting } from './types';
-import { Recurrence } from './types';
+import { Recurrence } from './types.js';
 
-export const CONTACTS: Contact[] = [
+export const CONTACTS = [
   {
     id: 'c1',
     name: 'Aria Montgomery',
@@ -40,7 +39,7 @@ export const CONTACTS: Contact[] = [
   },
 ];
 
-export const MEETINGS: Meeting[] = [
+export const MEETINGS = [
   {
     id: 'm1',
     title: 'Project Phoenix Kick-off',

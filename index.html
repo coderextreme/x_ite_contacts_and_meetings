@@ -12,12 +12,7 @@
     <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@18.3.1/",
-    "react": "https://esm.sh/react@18.3.1",
-    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
-    "@google/genai": "https://esm.sh/@google/genai@0.14.0",
-    "zustand": "https://esm.sh/zustand@4.5.2",
-    "@react-spring/web": "https://esm.sh/@react-spring/web@9.7.3"
+    "@google/genai": "https://esm.sh/@google/genai@0.14.0"
   }
 }
 </script>
@@ -29,10 +24,93 @@
             padding: 0;
             overflow: hidden; /* Prevent scrollbars */
         }
+        /* Simple fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        /* Custom scrollbar for webkit browsers */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(192, 132, 252, 0.5); /* purple-400/50 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(192, 132, 252, 0.7);
+        }
     </style>
   </head>
   <body class="bg-black text-gray-200">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <x3d-canvas id="x3d-canvas-element" width="100%" height="100%">
+      <x3d>
+        <scene>
+          <component name="HTML" level="1" />
+          <background skyColor='0.0 0.0 0.0'></background>
+          <navigationInfo type='"EXAMINE" "ANY"'></navigationInfo>
+          <viewpoint position='0 0 18'></viewpoint>
+          
+          <pointLight location='0 3 4' intensity='0.8' ambientIntensity='0.25' color='0.4 0.9 0.95'></pointLight>
+          <pointLight location='-3 2 3' intensity='0.6' ambientIntensity='0.25' color='0.75 0.5 0.98'></pointLight>
+          
+          <!-- Navigation Panel -->
+          <transform translation='-6.25 0 0'>
+            <billboard axisOfRotation='0 0 0'>
+              <html id="nav-plane" style="width: 180px; height: 400px; font-size: 16px;">
+                <div id="nav-container" class="w-full h-full"></div>
+              </html>
+            </billboard>
+          </transform>
+
+          <!-- List Panel -->
+          <transform>
+            <billboard axisOfRotation='0 0 0'>
+              <html id="list-plane" style="width: 480px; height: 800px; font-size: 16px;">
+                 <div id="list-container" class="w-full h-full"></div>
+              </html>
+            </billboard>
+          </transform>
+
+          <!-- Detail Panel -->
+          <transform translation='6.25 0 0'>
+            <billboard axisOfRotation='0 0 0'>
+              <html id="detail-plane" style="width: 720px; height: 800px; font-size: 16px;">
+                <div id="detail-container" class="w-full h-full"></div>
+              </html>
+            </billboard>
+          </transform>
+
+          <!-- Modal Layer -->
+          <transform id="modal-layer" translation="0 0 1" render="false">
+             <billboard axisOfRotation='0 0 0'>
+                <!-- Background Dimmer -->
+                <shape>
+                    <plane size="50 50"></plane>
+                    <appearance>
+                        <material diffuseColor="0 0 0" transparency="0.3"></material>
+                    </appearance>
+                </shape>
+                <!-- Modal Content -->
+                <transform>
+                    <html id="modal-plane" style="width: 600px; height: 650px; font-size: 16px;">
+                      <div id="modal-container" class="w-full h-full"></div>
+                    </html>
+                </transform>
+             </billboard>
+          </transform>
+          
+        </scene>
+      </x3d>
+    </x3d-canvas>
+    <div id="root"></div> <!-- Keep for compatibility, but not used by app logic -->
+    <script type="module" src="/index.js"></script>
   </body>
 </html>

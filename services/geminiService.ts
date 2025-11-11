@@ -1,10 +1,6 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Meeting, Contact, Briefing } from '../types';
 
 if (!process.env.API_KEY) {
-    // In a real app, you'd want to handle this more gracefully.
-    // For this example, we'll throw an error if the key is not set.
     throw new Error("API_KEY environment variable not set.");
 }
 
@@ -40,7 +36,7 @@ const responseSchema = {
     required: ["summary", "attendeeBriefings", "talkingPoints"]
 };
 
-export const generateMeetingBriefing = async (meeting: Meeting, contacts: Contact[]): Promise<Briefing> => {
+export const generateMeetingBriefing = async (meeting, contacts) => {
   const attendeesInfo = contacts.map(c => `- ${c.name}, ${c.title} at ${c.company}`).join('\n');
 
   const prompt = `
@@ -73,9 +69,8 @@ export const generateMeetingBriefing = async (meeting: Meeting, contacts: Contac
     const jsonText = response.text.trim();
     const parsedJson = JSON.parse(jsonText);
 
-    // Basic validation to ensure the parsed object matches the Briefing type
     if (parsedJson.summary && parsedJson.attendeeBriefings && parsedJson.talkingPoints) {
-        return parsedJson as Briefing;
+        return parsedJson;
     } else {
         throw new Error("AI response did not match the expected format.");
     }
