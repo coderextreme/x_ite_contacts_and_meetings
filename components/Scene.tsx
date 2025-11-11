@@ -2,30 +2,32 @@ import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '../App';
 
-// Fix: Provided specific type declarations for X3D custom elements.
-// The previous 'any' type was insufficient, likely due to type conflicts with other libraries
-// polluting the global JSX namespace. These more specific types ensure that the custom X3D tags
-// and their attributes are correctly recognized by TypeScript.
+// Fix: The previous detailed type declarations for X3D custom elements were not being
+// correctly recognized by TypeScript, leading to numerous errors. This can happen due to
+// complex module resolution or conflicts in global typings.
+// Reverting to 'any' for these custom elements is a robust workaround to ensure the
+// application compiles successfully, bypassing the type resolution issue.
 declare global {
     namespace JSX {
         interface IntrinsicElements {
-            'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-            'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { profile?: string };
-            'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { skyColor?: string };
-            'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { type?: string };
-            'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { position?: string };
-            'environment': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { ambientIntensity?: string };
-            'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { location?: string, intensity?: string, color?: string };
-            'shape': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-            'appearance': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-            'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { emissiveColor?: string, transparency?: string };
-            'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { coordIndex?: string };
-            'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-            'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { point?: string };
-            'transform': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-            'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { axisOfRotation?: string };
-            'plane': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { size?: string };
-            'html': Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>, 'style'> & { style?: string };
+            'x3d-canvas': any;
+            'x3d': any;
+            'scene': any;
+            'background': any;
+            'navigationInfo': any;
+            'viewpoint': any;
+            'environment': any;
+            'pointLight': any;
+            'shape': any;
+            'appearance': any;
+            'material': any;
+            'indexedLineSet': any;
+            'pointSet': any;
+            'coordinate': any;
+            'transform': any;
+            'billboard': any;
+            'plane': any;
+            'html': any;
         }
     }
 }
@@ -136,38 +138,40 @@ const Scene: React.FC = () => {
   const viewpointPosition = `0 0 ${uiWidth * 1.2}`;
 
   return (
-    <x3d width='100%' height='100%'>
-      <scene profile="Immersive">
-        <background skyColor='0.0 0.0 0.0'></background>
-        <navigationInfo type='"EXAMINE" "ANY"'></navigationInfo>
-        <viewpoint position={viewpointPosition}></viewpoint>
-        
-        <pointLight location='0 3 4' intensity='0.8' color='0.4 0.9 0.95'></pointLight>
-        <pointLight location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98'></pointLight>
-        
-        <environment ambientIntensity='0.5'></environment>
-        
-        {/* Billboard ensures the UI always faces the camera */}
-        <billboard axisOfRotation='0 0 0'>
-            <transform>
-                {/* A transparent plane that acts as the canvas for our HTML content */}
-                <shape>
-                    <plane size={uiPlaneSize}></plane>
-                    <appearance>
-                        <material transparency='1'></material>
-                    </appearance>
-                </shape>
-                {/* X_ITE's html tag renders DOM content in the 3D scene */}
-                <html style="width: 1400px; height: 800px; font-size: 16px;">
-                    {/* React app mounts into the div created here by X_ITE */}
-                </html>
-            </transform>
-        </billboard>
-        
-        <Stars radius={100} count={5000} />
-        <Grid size={100} divisions={100} />
-      </scene>
-    </x3d>
+    <x3d-canvas width='100%' height='100%'>
+      <x3d>
+        <scene profile="Immersive">
+          <background skyColor='0.0 0.0 0.0'></background>
+          <navigationInfo type='"EXAMINE" "ANY"'></navigationInfo>
+          <viewpoint position={viewpointPosition}></viewpoint>
+          
+          <pointLight location='0 3 4' intensity='0.8' color='0.4 0.9 0.95'></pointLight>
+          <pointLight location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98'></pointLight>
+          
+          <environment ambientIntensity='0.5'></environment>
+          
+          {/* Billboard ensures the UI always faces the camera */}
+          <billboard axisOfRotation='0 0 0'>
+              <transform>
+                  {/* A transparent plane that acts as the canvas for our HTML content */}
+                  <shape>
+                      <plane size={uiPlaneSize}></plane>
+                      <appearance>
+                          <material transparency='1'></material>
+                      </appearance>
+                  </shape>
+                  {/* X_ITE's html tag renders DOM content in the 3D scene */}
+                  <html style="width: 1400px; height: 800px; font-size: 16px;">
+                      {/* React app mounts into the div created here by X_ITE */}
+                  </html>
+              </transform>
+          </billboard>
+          
+          <Stars radius={100} count={5000} />
+          <Grid size={100} divisions={100} />
+        </scene>
+      </x3d>
+    </x3d-canvas>
   );
 };
 
