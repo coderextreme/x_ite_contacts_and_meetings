@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import type { Meeting, Contact } from '../types';
+import type { Meeting } from '../types';
+import { useAppStore } from '../store';
 
 interface AttendeeManagerProps {
     meeting: Meeting;
-    allContacts: Contact[];
-    onSave: (meetingId: string, attendeeIds: string[]) => void;
-    onCancel: () => void;
 }
 
-const AttendeeManager: React.FC<AttendeeManagerProps> = ({ meeting, allContacts, onSave, onCancel }) => {
+const AttendeeManager: React.FC<AttendeeManagerProps> = ({ meeting }) => {
+    const { contacts: allContacts, updateAttendees, closeAttendeeModal } = useAppStore();
     const [selectedIds, setSelectedIds] = useState<string[]>(meeting.attendees);
 
     const handleToggle = (contactId: string) => {
@@ -20,7 +19,7 @@ const AttendeeManager: React.FC<AttendeeManagerProps> = ({ meeting, allContacts,
     };
 
     const handleSave = () => {
-        onSave(meeting.id, selectedIds);
+        updateAttendees(meeting.id, selectedIds);
     };
 
     return (
@@ -49,7 +48,7 @@ const AttendeeManager: React.FC<AttendeeManagerProps> = ({ meeting, allContacts,
                 )}
             </div>
             <div className="flex justify-end gap-4 pt-4">
-                <button type="button" onClick={onCancel} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
+                <button type="button" onClick={closeAttendeeModal} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
                 <button type="button" onClick={handleSave} className="px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 transition-colors text-white font-semibold">Update Attendees</button>
             </div>
         </div>

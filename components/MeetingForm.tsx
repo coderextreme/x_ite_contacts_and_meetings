@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { Meeting, Contact } from '../types';
+import type { Meeting } from '../types';
 import { Recurrence } from '../types';
+import { useAppStore } from '../store';
 
-interface MeetingFormProps {
-    onSave: (meeting: Omit<Meeting, 'id'> & { id?: string }) => void;
-    onCancel: () => void;
-    meeting: Meeting | null;
-    contacts: Contact[];
-}
+const MeetingForm: React.FC = () => {
+    const { saveMeeting, closeMeetingModal, editingMeeting, contacts } = useAppStore();
 
-const MeetingForm: React.FC<MeetingFormProps> = ({ onSave, onCancel, meeting, contacts }) => {
     const [formData, setFormData] = useState({
         title: '',
         time: '',
@@ -20,14 +16,14 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onSave, onCancel, meeting, co
     });
 
     useEffect(() => {
-        if (meeting) {
+        if (editingMeeting) {
             setFormData({
-                title: meeting.title,
-                time: new Date(meeting.time.getTime() - (meeting.time.getTimezoneOffset() * 60000)).toISOString().slice(0, 16),
-                duration: meeting.duration,
-                agenda: meeting.agenda,
-                recurrence: meeting.recurrence || Recurrence.NONE,
-                attendees: meeting.attendees,
+                title: editingMeeting.title,
+                time: new Date(editingMeeting.time.getTime() - (editingMeeting.time.getTimezoneOffset() * 60000)).toISOString().slice(0, 16),
+                duration: editingMeeting.duration,
+                agenda: editingMeeting.agenda,
+                recurrence: editingMeeting.recurrence || Recurrence.NONE,
+                attendees: editingMeeting.attendees,
             });
         } else {
             setFormData({
@@ -39,7 +35,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onSave, onCancel, meeting, co
                 attendees: [],
             });
         }
-    }, [meeting]);
+    }, [editingMeeting]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -57,7 +53,8 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onSave, onCancel, meeting, co
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ ...formData, id: meeting?.id, time: new Date(formData.time) });
+        // FIX: Changed onSave to saveMeeting, which is the correct function from the store.
+        saveMeeting({ ...formData, id: editingMeeting?.id, time: new Date(formData.time) });
     };
 
     const inputClass = "w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition";
@@ -106,7 +103,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({ onSave, onCancel, meeting, co
                  </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">
-                <button type="button" onClick={onCancel} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
+                <button type="button" onClick={closeMeetingModal} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
                 <button type="submit" className="px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 transition-colors text-white font-semibold">Save Meeting</button>
             </div>
         </form>

@@ -1,16 +1,11 @@
 import React from 'react';
-import type { Meeting } from '../types';
 import { ClockIcon, PlusIcon } from './IconComponents';
 import ListItemWrapper from './ListItemWrapper';
+import { useAppStore } from '../store';
 
-interface MeetingListProps {
-  meetings: Meeting[];
-  selectedMeetingId: string | null;
-  onSelectMeeting: (id: string) => void;
-  onAddMeeting: () => void;
-}
+const MeetingList: React.FC = () => {
+  const { meetings, selectedMeetingId, selectMeeting, openNewMeetingModal } = useAppStore();
 
-const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedMeetingId, onSelectMeeting, onAddMeeting }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
@@ -25,7 +20,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedMeetingId, 
         <div className="flex justify-between items-center p-4 border-b border-gray-700/80 flex-shrink-0">
             <h2 className="text-2xl font-bold text-cyan-300">Meetings</h2>
              <button
-                onClick={onAddMeeting}
+                onClick={openNewMeetingModal}
                 className="p-2 rounded-full text-cyan-300 bg-cyan-500/20 hover:bg-cyan-500/40 transition-colors"
                 aria-label="Add new meeting"
             >
@@ -34,7 +29,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedMeetingId, 
         </div>
         <div className="p-4 space-y-3 overflow-y-auto">
         {meetings.map((meeting) => (
-            <ListItemWrapper key={meeting.id} onClick={() => onSelectMeeting(meeting.id)}>
+            <ListItemWrapper key={meeting.id} onClick={() => selectMeeting(meeting.id)}>
                 <div className={`w-full text-left p-3 rounded-lg transition-all duration-200 border-2 ${
                     selectedMeetingId === meeting.id
                     ? 'bg-cyan-500/30 border-cyan-400 shadow-lg shadow-cyan-500/20'

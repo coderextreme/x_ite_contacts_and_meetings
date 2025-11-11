@@ -1,28 +1,36 @@
-import React, { useState, useCallback } from 'react';
-import type { Meeting, Contact, Briefing } from '../types';
+import React, { useState, useCallback, useMemo } from 'react';
+import type { Contact, Briefing } from '../types';
 import { generateMeetingBriefing } from '../services/geminiService';
 import { ClockIcon, SparklesIcon, CalendarDaysIcon, PencilIcon, TrashIcon, UserPlusIcon } from './IconComponents';
 import LoadingSpinner from './LoadingSpinner';
+import { useAppStore } from '../store';
 
-interface MeetingDetailProps {
-  meeting: Meeting;
-  contacts: Contact[];
-  onEdit: (meeting: Meeting) => void;
-  onDelete: (meetingId: string) => void;
-  onManageAttendees: (meeting: Meeting) => void;
-}
+const MeetingDetail: React.FC = () => {
+  const { 
+      meetings, 
+      contacts, 
+      selectedMeetingId, 
+      openEditMeetingModal, 
+      deleteMeeting, 
+      openAttendeeModal 
+  } = useAppStore();
 
-const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit, onDelete, onManageAttendees }) => {
+  const meeting = meetings.find(m => m.id === selectedMeetingId);
+  const meetingContacts = useMemo(() => {
+    return meeting ? meeting.attendees.map(id => contacts.find(c => c.id === id)).filter(Boolean) as Contact[] : [];
+  }, [meeting, contacts]);
+
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateBriefing = useCallback(async () => {
+    if (!meeting) return;
     setIsLoading(true);
     setError(null);
     setBriefing(null);
     try {
-      const result = await generateMeetingBriefing(meeting, contacts);
+      const result = await generateMeetingBriefing(meeting, meetingContacts);
       setBriefing(result);
     } catch (e) {
       setError('Failed to generate briefing. Please try again.');
@@ -30,7 +38,7 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
     } finally {
       setIsLoading(false);
     }
-  }, [meeting, contacts]);
+  }, [meeting, meetingContacts]);
   
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -38,6 +46,8 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
       timeStyle: 'short',
     }).format(date);
   };
+
+  if (!meeting) return null;
 
   return (
     <div className="animate-fade-in h-full flex flex-col gap-4">
@@ -47,14 +57,14 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
             <h1 className="text-4xl font-bold text-white tracking-wider">{meeting.title}</h1>
             <div className="flex gap-2 flex-shrink-0 ml-4">
                  <button 
-                    onClick={() => onEdit(meeting)}
+                    onClick={() => openEditMeetingModal(meeting)}
                     className="p-3 rounded-full bg-gray-700 hover:bg-cyan-500/40 text-cyan-300 transition-colors"
                     aria-label="Edit meeting"
                 >
                     <PencilIcon className="h-6 w-6" />
                 </button>
                 <button 
-                    onClick={() => onDelete(meeting.id)}
+                    onClick={() => deleteMeeting(meeting.id)}
                     className="p-3 rounded-full bg-gray-700 hover:bg-red-500/40 text-red-300 transition-colors"
                     aria-label="Delete meeting"
                 >
@@ -89,7 +99,7 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
               <h2 className="text-xl font-semibold text-gray-300 flex justify-between items-center">
                 <span>Attendees</span>
                 <button 
-                    onClick={() => onManageAttendees(meeting)}
+                    onClick={() => openAttendeeModal(meeting)}
                     className="flex items-center text-sm text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-3 py-1 rounded-md transition-colors"
                     aria-label="Manage attendees"
                 >
@@ -98,7 +108,7 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
                 </button>
               </h2>
               <div className="flex flex-wrap gap-4 mt-2">
-              {contacts.map(contact => (
+              {meetingContacts.map(contact => (
                   <div key={contact.id} className="flex items-center space-x-2">
                       <img src={contact.avatarUrl} alt={contact.name} className="h-10 w-10 rounded-full" />
                       <div>
@@ -107,7 +117,7 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ meeting, contacts, onEdit
                       </div>
                   </div>
               ))}
-              {contacts.length === 0 && <p className="text-gray-500">No attendees assigned.</p>}
+              {meetingContacts.length === 0 && <p className="text-gray-500">No attendees assigned.</p>}
               </div>
             </div>
           </div>

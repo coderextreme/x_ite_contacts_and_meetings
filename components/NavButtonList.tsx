@@ -2,6 +2,7 @@ import React from 'react';
 import { useSpring, a } from '@react-spring/web';
 import { ViewType } from '../types';
 import { UserGroupIcon, CalendarIcon } from './IconComponents';
+import { useAppStore } from '../store';
 
 type NavItemData = {
     view: ViewType;
@@ -52,13 +53,12 @@ const NavItem = ({ item, isActive, onClick }: {
     );
 };
 
-const NAV_ITEM_HEIGHT = 160; // height of NavItem in pixels
-const NAV_ITEM_GAP = 16; // gap in pixels
+const NAV_ITEM_HEIGHT = 160;
+const NAV_ITEM_GAP = 16;
 
-const NavButtonList = ({ activeView, onSelectView }: {
-    activeView: ViewType;
-    onSelectView: (view: ViewType) => void;
-}) => {
+const NavButtonList = () => {
+    const { activeView, setActiveView } = useAppStore();
+
     const navItems: NavItemData[] = [
       { view: ViewType.MEETINGS, label: 'Meetings', icon: CalendarIcon, color: 'cyan' },
       { view: ViewType.CONTACTS, label: 'Contacts', icon: UserGroupIcon, color: 'purple' }
@@ -75,7 +75,6 @@ const NavButtonList = ({ activeView, onSelectView }: {
 
     return (
         <div className="relative p-4 bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-700/50">
-             {/* Sliding indicator */}
              <a.div 
                 style={indicatorSpring}
                 className="absolute top-4 left-4 w-[120px] h-[160px] rounded-lg -z-10"
@@ -90,14 +89,13 @@ const NavButtonList = ({ activeView, onSelectView }: {
                 />
              </a.div>
              
-            {/* Navigation Items */}
             <div className="flex flex-col items-center" style={{ gap: `${NAV_ITEM_GAP}px` }}>
                 {navItems.map((item) => (
                     <NavItem 
                         key={item.view}
                         item={item}
                         isActive={activeView === item.view}
-                        onClick={() => onSelectView(item.view)}
+                        onClick={() => setActiveView(item.view)}
                     />
                 ))}
             </div>
