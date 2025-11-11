@@ -176,8 +176,7 @@ function renderMeetingList() {
 
 function renderDetail() {
     const { activeView, selectedContactId, selectedMeetingId } = appState;
-    const isDetailVisible = !!(selectedContactId || selectedMeetingId);
-
+    
     let content = `<div class="flex items-center justify-center h-full"><p class="text-gray-400 text-lg">Select an item to see details</p></div>`;
     
     if (activeView === ViewType.CONTACTS && selectedContactId) {

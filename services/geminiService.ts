@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set.");
@@ -7,29 +7,29 @@ if (!process.env.API_KEY) {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const responseSchema = {
-    type: Type.OBJECT,
+    type: "OBJECT",
     properties: {
         summary: {
-            type: Type.STRING,
+            type: "STRING",
             description: "A brief, one-paragraph summary of the meeting's primary goal and context."
         },
         attendeeBriefings: {
-            type: Type.ARRAY,
+            type: "ARRAY",
             description: "A list of briefings for each attendee.",
             items: {
-                type: Type.OBJECT,
+                type: "OBJECT",
                 properties: {
-                    name: { type: Type.STRING, description: "The attendee's full name." },
-                    brief: { type: Type.STRING, description: "A concise briefing on the attendee's likely role, perspective, and key contributions relevant to this meeting's agenda. Focus on their job title and company." }
+                    name: { type: "STRING", description: "The attendee's full name." },
+                    brief: { type: "STRING", description: "A concise briefing on the attendee's likely role, perspective, and key contributions relevant to this meeting's agenda. Focus on their job title and company." }
                 },
                 required: ["name", "brief"]
             }
         },
         talkingPoints: {
-            type: Type.ARRAY,
+            type: "ARRAY",
             description: "A list of 3-5 key talking points or insightful questions to facilitate a productive discussion, based on the agenda and attendee roles.",
             items: {
-                type: Type.STRING
+                type: "STRING"
             }
         }
     },
