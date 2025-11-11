@@ -2,35 +2,17 @@ import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '../App';
 
-// Fix: The previous detailed type declarations for X3D custom elements were not being
-// correctly recognized by TypeScript, leading to numerous errors. This can happen due to
-// complex module resolution or conflicts in global typings.
-// Reverting to 'any' for these custom elements is a robust workaround to ensure the
-// application compiles successfully, bypassing the type resolution issue.
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            'x3d-canvas': any;
-            'x3d': any;
-            'scene': any;
-            'background': any;
-            'navigationInfo': any;
-            'viewpoint': any;
-            'environment': any;
-            'pointLight': any;
-            'shape': any;
-            'appearance': any;
-            'material': any;
-            'indexedLineSet': any;
-            'pointSet': any;
-            'coordinate': any;
-            'transform': any;
-            'billboard': any;
-            'plane': any;
-            'html': any;
-        }
-    }
-}
+// Define a type for our X3D nodes that allows any attribute.
+// This is used with a component alias for 'div' to satisfy TypeScript
+// when using X3D-specific attributes with the `is` property.
+type X3DNodeProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
+  is: string;
+  [key: string]: any;
+};
+
+// Fix: Cast to 'unknown' first to resolve the TypeScript conversion error.
+const X3DNode = 'div' as unknown as React.FC<X3DNodeProps>;
+
 
 const Grid = ({ size, divisions }: { size: number; divisions: number }) => {
     const points: string[] = [];
@@ -53,14 +35,14 @@ const Grid = ({ size, divisions }: { size: number; divisions: number }) => {
     }
 
     return (
-        <shape>
-            <appearance>
-                <material emissiveColor='0.2 0.2 0.2'></material>
-            </appearance>
-            <indexedLineSet coordIndex={indices.join(' ')}>
-                <coordinate point={points.join(' ')}></coordinate>
-            </indexedLineSet>
-        </shape>
+        <X3DNode is="shape">
+            <X3DNode is="appearance">
+                <X3DNode is="material" emissiveColor='0.2 0.2 0.2' />
+            </X3DNode>
+            <X3DNode is="indexedLineSet" coordIndex={indices.join(' ')}>
+                <X3DNode is="coordinate" point={points.join(' ')} />
+            </X3DNode>
+        </X3DNode>
     );
 };
 
@@ -78,14 +60,14 @@ const Stars = ({ radius, count }: { radius: number; count: number }) => {
     }
 
     return (
-        <shape>
-            <appearance>
-                <material emissiveColor='1 1 1'></material>
-            </appearance>
-            <pointSet>
-                <coordinate point={points.join(' ')}></coordinate>
-            </pointSet>
-        </shape>
+        <X3DNode is="shape">
+            <X3DNode is="appearance">
+                <X3DNode is="material" emissiveColor='1 1 1' />
+            </X3DNode>
+            <X3DNode is="pointSet">
+                <X3DNode is="coordinate" point={points.join(' ')} />
+            </X3DNode>
+        </X3DNode>
     );
 };
 
@@ -138,40 +120,41 @@ const Scene: React.FC = () => {
   const viewpointPosition = `0 0 ${uiWidth * 1.2}`;
 
   return (
-    <x3d-canvas width='100%' height='100%'>
-      <x3d>
-        <scene profile="Immersive">
-          <background skyColor='0.0 0.0 0.0'></background>
-          <navigationInfo type='"EXAMINE" "ANY"'></navigationInfo>
-          <viewpoint position={viewpointPosition}></viewpoint>
+    <X3DNode is='x3d-canvas' width='100%' height='100%'>
+      <X3DNode is='x3d'>
+        <X3DNode is='scene' profile="Immersive">
+          <X3DNode is='background' skyColor='0.0 0.0 0.0' />
+          <X3DNode is='navigationInfo' type='"EXAMINE" "ANY"' />
+          <X3DNode is='viewpoint' position={viewpointPosition} />
           
-          <pointLight location='0 3 4' intensity='0.8' color='0.4 0.9 0.95'></pointLight>
-          <pointLight location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98'></pointLight>
+          <X3DNode is='pointLight' location='0 3 4' intensity='0.8' color='0.4 0.9 0.95' />
+          <X3DNode is='pointLight' location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98' />
           
-          <environment ambientIntensity='0.5'></environment>
+          <X3DNode is='environment' ambientIntensity='0.5' />
           
           {/* Billboard ensures the UI always faces the camera */}
-          <billboard axisOfRotation='0 0 0'>
-              <transform>
+          <X3DNode is='billboard' axisOfRotation='0 0 0'>
+              <X3DNode is='transform'>
                   {/* A transparent plane that acts as the canvas for our HTML content */}
-                  <shape>
-                      <plane size={uiPlaneSize}></plane>
-                      <appearance>
-                          <material transparency='1'></material>
-                      </appearance>
-                  </shape>
+                  <X3DNode is='shape'>
+                      <X3DNode is='plane' size={uiPlaneSize} />
+                      <X3DNode is='appearance'>
+                          <X3DNode is='material' transparency='1' />
+                      </X3DNode>
+                  </X3DNode>
                   {/* X_ITE's html tag renders DOM content in the 3D scene */}
-                  <html style="width: 1400px; height: 800px; font-size: 16px;">
+                  {/* Fix: The style prop in React requires an object, not a string. */}
+                  <X3DNode is='html' style={{ width: '1400px', height: '800px', fontSize: '16px' }}>
                       {/* React app mounts into the div created here by X_ITE */}
-                  </html>
-              </transform>
-          </billboard>
+                  </X3DNode>
+              </X3DNode>
+          </X3DNode>
           
           <Stars radius={100} count={5000} />
           <Grid size={100} divisions={100} />
-        </scene>
-      </x3d>
-    </x3d-canvas>
+        </X3DNode>
+      </X3DNode>
+    </X3DNode>
   );
 };
 
