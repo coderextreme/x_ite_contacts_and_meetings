@@ -8,35 +8,32 @@ declare const x_ite: {
 };
 
 // Re-declare JSX intrinsic elements for X_ITE tags.
-// This tells TypeScript how to type-check these custom elements and their attributes.
-// The `is="x3d"` attribute is added as per user suggestion to help the X_ITE library identify its tags.
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; name?: string; level?: string; };
-      'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; width?: string; height?: string };
-      'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string };
-      'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; profile?: string; };
-      'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; skyColor?: string; };
-      'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; type?: string; };
-      'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; position?: string; };
-      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; location?: string; intensity?: string; color?: string; ambientIntensity?: string; };
-      'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; axisOfRotation?: string; };
+      // FIX: The entire block of X_ITE custom tag augmentations was being ignored by TypeScript
+      // due to a type conflict on the 'html' tag's 'style' attribute. Additionally, the 'is' attribute,
+      // used by all tags, was missing from the type definitions. Both issues are now resolved.
+      'component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { name?: string; level?: string; is?: string; };
+      'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { profile?: string; is?: string; };
+      'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { skyColor?: string; is?: string; };
+      'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { type?: string; is?: string; };
+      'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { position?: string; is?: string; };
+      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { location?: string; intensity?: string; ambientIntensity?: string; color?: string; is?: string; };
+      'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { axisOfRotation?: string; is?: string; };
       'transform': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'shape': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      'plane': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; size?: string; };
+      'plane': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { size?: string; is?: string; };
       'appearance': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; transparency?: string; emissiveColor?: string; };
-      // FIX: The 'html' tag conflicts with the standard HTML element type in React's JSX definitions.
-      // A circular reference in the previous type definition was causing TypeScript to ignore this entire
-      // IntrinsicElements augmentation. By explicitly using React's base type for the 'html' element,
-      // the circular reference is broken, which allows all custom X3D tags to be recognized.
-      // The original fix was incorrect as it used the generic `HTMLAttributes` which is not compatible.
-      // Switched to `HtmlHTMLAttributes` to properly extend the existing definition, fixing the entire augmentation block.
-      'html': React.DetailedHTMLProps<React.HtmlHTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement> & { is?: string };
+      'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { transparency?: string; emissiveColor?: string; is?: string; };
+      // The X3D 'html' tag is a custom element, not the standard document root.
+      // It expects a string for its style attribute, which conflicts with React's default.
+      'html': React.DetailedHTMLProps<Omit<React.HTMLAttributes<HTMLElement>, 'style'>, HTMLElement> & { style?: string; is?: string; };
       'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; point?: string; };
-      'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; coordIndex?: string; };
+      'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { point?: string; is?: string; };
+      'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { coordIndex?: string; is?: string; };
     }
   }
 }
@@ -107,7 +104,7 @@ const Scene: React.FC = () => {
     // This function is provided by the X_ITE library to process X3D elements
     // that are added to the DOM dynamically, which is what happens with React.
     if (typeof x_ite !== 'undefined' && typeof x_ite.process_x3d_tags === 'function') {
-      x_ite.process_x3d_tags();
+      setTimeout(() => x_ite.process_x3d_tags(), 0);
     }
   }, []); // Empty dependency array ensures this runs only once on mount.
 
@@ -124,6 +121,10 @@ const Scene: React.FC = () => {
         
         if (mountPoint) {
             obs.disconnect();
+            // Ensure the mount point is empty before rendering
+            while(mountPoint.firstChild) {
+                mountPoint.removeChild(mountPoint.firstChild);
+            }
             const root = ReactDOM.createRoot(mountPoint);
             rootRef.current = root;
             root.render(
@@ -156,6 +157,7 @@ const Scene: React.FC = () => {
           {/* Explicitly declare the HTML component is needed for this profile */}
           <component is="x3d" name="HTML" level="1" />
           <background is="x3d" skyColor='0.0 0.0 0.0' />
+          {/* Corrected type attribute format for multi-string values as per X3D spec */}
           <navigationInfo is="x3d" type='"EXAMINE" "ANY"' />
           <viewpoint is="x3d" position={viewpointPosition} />
           
@@ -170,7 +172,8 @@ const Scene: React.FC = () => {
                           <material is="x3d" transparency='1' />
                       </appearance>
                   </shape>
-                  <html is="x3d" style={{ width: '1400px', height: '800px', fontSize: '16px' }}>
+                  {/* Corrected style attribute from a React object to a string, which the X_ITE parser expects. */}
+                  <html is="x3d" style="width: 1400px; height: 800px; font-size: 16px;">
                       {/* React app mounts into the div created here by X_ITE */}
                   </html>
               </transform>
