@@ -19,8 +19,7 @@ declare global {
       'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; skyColor?: string; };
       'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; type?: string; };
       'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; position?: string; };
-      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; location?: string; intensity?: string; color?: string; };
-      'environment': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; ambientIntensity?: string; };
+      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; location?: string; intensity?: string; color?: string; ambientIntensity?: string; };
       'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; axisOfRotation?: string; };
       'transform': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'shape': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
@@ -28,10 +27,10 @@ declare global {
       'appearance': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; transparency?: string; emissiveColor?: string; };
       // FIX: The 'html' tag conflicts with the standard HTML element type in React's JSX definitions.
-      // The original definition was incompatible, causing TypeScript to ignore this entire `IntrinsicElements` augmentation.
-      // This fix extends the existing 'html' type from JSX.IntrinsicElements instead of redefining it,
-      // which resolves the conflict and allows all custom X3D tags to be recognized.
-      'html': JSX.IntrinsicElements['html'] & { is?: string };
+      // A circular reference in the previous type definition was causing TypeScript to ignore this entire
+      // IntrinsicElements augmentation. By explicitly using React's base type for the 'html' element,
+      // the circular reference is broken, which allows all custom X3D tags to be recognized.
+      'html': React.DetailedHTMLProps<React.HTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement> & { is?: string };
       'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; point?: string; };
       'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; coordIndex?: string; };
@@ -155,10 +154,8 @@ const Scene: React.FC = () => {
           <navigationInfo is="x3d" type='"EXAMINE" "ANY"' />
           <viewpoint is="x3d" position={viewpointPosition} />
           
-          <pointLight is="x3d" location='0 3 4' intensity='0.8' color='0.4 0.9 0.95' />
-          <pointLight is="x3d" location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98' />
-          
-          <environment is="x3d" ambientIntensity='0.5' />
+          <pointLight is="x3d" location='0 3 4' intensity='0.8' ambientIntensity='0.25' color='0.4 0.9 0.95' />
+          <pointLight is="x3d" location='-3 2 3' intensity='0.6' ambientIntensity='0.25' color='0.75 0.5 0.98' />
           
           <billboard is="x3d" axisOfRotation='0 0 0'>
               <transform is="x3d">
