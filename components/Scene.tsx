@@ -2,6 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '../App';
 
+// Declare the x_ite global so TypeScript knows about it.
+declare const x_ite: {
+    process_x3d_tags: () => void;
+};
+
 // Define a type for our X3D nodes that allows any attribute.
 // This is used with a component alias for 'div' to satisfy TypeScript
 // when using X3D-specific attributes with the `is` property.
@@ -74,6 +79,16 @@ const Stars = ({ radius, count }: { radius: number; count: number }) => {
 
 const Scene: React.FC = () => {
   const rootRef = useRef<ReactDOM.Root | null>(null);
+  
+  // Effect to initialize X_ITE after React has rendered the custom elements.
+  useEffect(() => {
+    // This function is provided by the X_ITE library to process X3D elements
+    // that are added to the DOM dynamically, which is what happens with React.
+    if (typeof x_ite !== 'undefined' && typeof x_ite.process_x3d_tags === 'function') {
+      x_ite.process_x3d_tags();
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   useEffect(() => {
     // Use a MutationObserver to robustly find the mount point created by X_ITE's <html/> tag.
