@@ -7,17 +7,37 @@ declare const x_ite: {
     process_x3d_tags: () => void;
 };
 
-// Define a type for our X3D nodes that allows any attribute.
-// This is used with a component alias for 'div' to satisfy TypeScript
-// when using X3D-specific attributes with the `is` property.
-type X3DNodeProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> & {
-  is: string;
-  [key: string]: any;
-};
-
-// Fix: Cast to 'unknown' first to resolve the TypeScript conversion error.
-const X3DNode = 'div' as unknown as React.FC<X3DNodeProps>;
-
+// Re-declare JSX intrinsic elements for X_ITE tags.
+// This tells TypeScript how to type-check these custom elements and their attributes.
+// The `is="x3d"` attribute is added as per user suggestion to help the X_ITE library identify its tags.
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; width?: string; height?: string };
+      'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string };
+      'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; profile?: string; };
+      'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; skyColor?: string; };
+      'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; type?: string; };
+      'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; position?: string; };
+      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; location?: string; intensity?: string; color?: string; };
+      'environment': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; ambientIntensity?: string; };
+      'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; axisOfRotation?: string; };
+      'transform': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'shape': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'plane': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; size?: string; };
+      'appearance': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; transparency?: string; emissiveColor?: string; };
+      // FIX: The 'html' tag conflicts with the standard HTML element type in React's JSX definitions.
+      // The original definition was incompatible, causing TypeScript to ignore this entire `IntrinsicElements` augmentation.
+      // This fix extends the existing 'html' type from JSX.IntrinsicElements instead of redefining it,
+      // which resolves the conflict and allows all custom X3D tags to be recognized.
+      'html': JSX.IntrinsicElements['html'] & { is?: string };
+      'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; point?: string; };
+      'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; coordIndex?: string; };
+    }
+  }
+}
 
 const Grid = ({ size, divisions }: { size: number; divisions: number }) => {
     const points: string[] = [];
@@ -40,14 +60,14 @@ const Grid = ({ size, divisions }: { size: number; divisions: number }) => {
     }
 
     return (
-        <X3DNode is="shape">
-            <X3DNode is="appearance">
-                <X3DNode is="material" emissiveColor='0.2 0.2 0.2' />
-            </X3DNode>
-            <X3DNode is="indexedLineSet" coordIndex={indices.join(' ')}>
-                <X3DNode is="coordinate" point={points.join(' ')} />
-            </X3DNode>
-        </X3DNode>
+        <shape is="x3d">
+            <appearance is="x3d">
+                <material is="x3d" emissiveColor='0.2 0.2 0.2' />
+            </appearance>
+            <indexedLineSet is="x3d" coordIndex={indices.join(' ')}>
+                <coordinate is="x3d" point={points.join(' ')} />
+            </indexedLineSet>
+        </shape>
     );
 };
 
@@ -65,14 +85,14 @@ const Stars = ({ radius, count }: { radius: number; count: number }) => {
     }
 
     return (
-        <X3DNode is="shape">
-            <X3DNode is="appearance">
-                <X3DNode is="material" emissiveColor='1 1 1' />
-            </X3DNode>
-            <X3DNode is="pointSet">
-                <X3DNode is="coordinate" point={points.join(' ')} />
-            </X3DNode>
-        </X3DNode>
+        <shape is="x3d">
+            <appearance is="x3d">
+                <material is="x3d" emissiveColor='1 1 1' />
+            </appearance>
+            <pointSet is="x3d">
+                <coordinate is="x3d" point={points.join(' ')} />
+            </pointSet>
+        </shape>
     );
 };
 
@@ -92,19 +112,16 @@ const Scene: React.FC = () => {
 
   useEffect(() => {
     // Use a MutationObserver to robustly find the mount point created by X_ITE's <html/> tag.
-    // This is more reliable than timers for handling custom element initialization.
     const observer = new MutationObserver((mutationsList, obs) => {
-        // Prevent re-running if we've already mounted
         if (rootRef.current) {
             obs.disconnect();
             return;
         }
 
-        // X_ITE creates a `div` inside a custom <html-content> element. This is our target.
         const mountPoint = document.querySelector('html-content > div');
         
         if (mountPoint) {
-            obs.disconnect(); // Stop observing once found
+            obs.disconnect();
             const root = ReactDOM.createRoot(mountPoint);
             rootRef.current = root;
             root.render(
@@ -115,11 +132,9 @@ const Scene: React.FC = () => {
         }
     });
 
-    // Start observing the body for child and subtree changes
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-        // Cleanup on unmount
         observer.disconnect();
         if (rootRef.current) {
             rootRef.current.unmount();
@@ -127,49 +142,43 @@ const Scene: React.FC = () => {
     };
   }, []);
   
-  // Define UI dimensions in X3D world units. (100px = 1 unit)
   const uiWidth = 14;
   const uiHeight = 8;
   const uiPlaneSize = `${uiWidth} ${uiHeight}`;
-  // Position the camera to comfortably view the UI plane
   const viewpointPosition = `0 0 ${uiWidth * 1.2}`;
 
   return (
-    <X3DNode is='x3d-canvas' width='100%' height='100%'>
-      <X3DNode is='x3d'>
-        <X3DNode is='scene' profile="Immersive">
-          <X3DNode is='background' skyColor='0.0 0.0 0.0' />
-          <X3DNode is='navigationInfo' type='"EXAMINE" "ANY"' />
-          <X3DNode is='viewpoint' position={viewpointPosition} />
+    <x3d-canvas is="x3d" width="100%" height="100%">
+      <x3d is="x3d">
+        <scene is="x3d" profile="Immersive">
+          <background is="x3d" skyColor='0.0 0.0 0.0' />
+          <navigationInfo is="x3d" type='"EXAMINE" "ANY"' />
+          <viewpoint is="x3d" position={viewpointPosition} />
           
-          <X3DNode is='pointLight' location='0 3 4' intensity='0.8' color='0.4 0.9 0.95' />
-          <X3DNode is='pointLight' location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98' />
+          <pointLight is="x3d" location='0 3 4' intensity='0.8' color='0.4 0.9 0.95' />
+          <pointLight is="x3d" location='-3 2 3' intensity='0.6' color='0.75 0.5 0.98' />
           
-          <X3DNode is='environment' ambientIntensity='0.5' />
+          <environment is="x3d" ambientIntensity='0.5' />
           
-          {/* Billboard ensures the UI always faces the camera */}
-          <X3DNode is='billboard' axisOfRotation='0 0 0'>
-              <X3DNode is='transform'>
-                  {/* A transparent plane that acts as the canvas for our HTML content */}
-                  <X3DNode is='shape'>
-                      <X3DNode is='plane' size={uiPlaneSize} />
-                      <X3DNode is='appearance'>
-                          <X3DNode is='material' transparency='1' />
-                      </X3DNode>
-                  </X3DNode>
-                  {/* X_ITE's html tag renders DOM content in the 3D scene */}
-                  {/* Fix: The style prop in React requires an object, not a string. */}
-                  <X3DNode is='html' style={{ width: '1400px', height: '800px', fontSize: '16px' }}>
+          <billboard is="x3d" axisOfRotation='0 0 0'>
+              <transform is="x3d">
+                  <shape is="x3d">
+                      <plane is="x3d" size={uiPlaneSize} />
+                      <appearance is="x3d">
+                          <material is="x3d" transparency='1' />
+                      </appearance>
+                  </shape>
+                  <html is="x3d" style={{ width: '1400px', height: '800px', fontSize: '16px' }}>
                       {/* React app mounts into the div created here by X_ITE */}
-                  </X3DNode>
-              </X3DNode>
-          </X3DNode>
+                  </html>
+              </transform>
+          </billboard>
           
           <Stars radius={100} count={5000} />
           <Grid size={100} divisions={100} />
-        </X3DNode>
-      </X3DNode>
-    </X3DNode>
+        </scene>
+      </x3d>
+    </x3d-canvas>
   );
 };
 
