@@ -13,6 +13,7 @@ declare const x_ite: {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
+      'component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; name?: string; level?: string; };
       'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; width?: string; height?: string };
       'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string };
       'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; profile?: string; };
@@ -30,7 +31,9 @@ declare global {
       // A circular reference in the previous type definition was causing TypeScript to ignore this entire
       // IntrinsicElements augmentation. By explicitly using React's base type for the 'html' element,
       // the circular reference is broken, which allows all custom X3D tags to be recognized.
-      'html': React.DetailedHTMLProps<React.HTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement> & { is?: string };
+      // The original fix was incorrect as it used the generic `HTMLAttributes` which is not compatible.
+      // Switched to `HtmlHTMLAttributes` to properly extend the existing definition, fixing the entire augmentation block.
+      'html': React.DetailedHTMLProps<React.HtmlHTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement> & { is?: string };
       'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; point?: string; };
       'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; coordIndex?: string; };
@@ -150,6 +153,8 @@ const Scene: React.FC = () => {
     <x3d-canvas is="x3d" width="100%" height="100%">
       <x3d is="x3d">
         <scene is="x3d" profile="Immersive">
+          {/* Explicitly declare the HTML component is needed for this profile */}
+          <component is="x3d" name="HTML" level="1" />
           <background is="x3d" skyColor='0.0 0.0 0.0' />
           <navigationInfo is="x3d" type='"EXAMINE" "ANY"' />
           <viewpoint is="x3d" position={viewpointPosition} />
