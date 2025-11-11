@@ -161,7 +161,7 @@ const Scene: React.FC = () => {
         <scene is="x3d" profile="Immersive">
           <component is="x3d" name="HTML" level="1" />
           <background is="x3d" skyColor='0.0 0.0 0.0' />
-          <navigationInfo is="x3d" type='"EXAMINE" "ANY"' />
+          <navigationInfo is="x3d" type="EXAMINE ANY" />
           <viewpoint is="x3d" position={viewpointPosition} />
           
           <pointLight is="x3d" location='0 3 4' intensity='0.8' ambientIntensity='0.25' color='0.4 0.9 0.95' />
