@@ -11,27 +11,27 @@ declare const x_ite: {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      // FIX: Using unquoted keys for valid identifiers to ensure TypeScript recognizes these custom elements.
-      component: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { name?: string; level?: string; is?: string; };
+      // FIX: Using quoted keys for all custom elements to ensure TypeScript recognizes them.
+      'component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { name?: string; level?: string; is?: string; };
       'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      x3d: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      scene: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { profile?: string; is?: string; };
-      background: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { skyColor?: string; is?: string; };
-      navigationInfo: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { type?: string; is?: string; };
-      viewpoint: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { position?: string; is?: string; };
-      pointLight: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { location?: string; intensity?: string; ambientIntensity?: string; color?: string; is?: string; };
-      billboard: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { axisOfRotation?: string; is?: string; };
-      transform: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      shape: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      plane: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { size?: string; is?: string; };
-      appearance: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      material: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { transparency?: string; emissiveColor?: string; is?: string; };
+      'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'scene': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { profile?: string; is?: string; };
+      'background': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { skyColor?: string; is?: string; };
+      'navigationInfo': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { type?: string; is?: string; };
+      'viewpoint': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { position?: string; is?: string; };
+      'pointLight': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { location?: string; intensity?: string; ambientIntensity?: string; color?: string; is?: string; };
+      'billboard': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { axisOfRotation?: string; is?: string; };
+      'transform': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'shape': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'plane': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { size?: string; is?: string; };
+      'appearance': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { transparency?: string; emissiveColor?: string; is?: string; };
       // The X3D 'html' tag is a custom element. By omitting the 'style' attribute from React's default
       // HTML attributes, we prevent the object-vs-string type conflict that was causing the crash.
-      html: React.DetailedHTMLProps<Omit<React.HTMLAttributes<HTMLElement>, 'style'>, HTMLElement> & { is?: string; };
-      pointSet: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
-      coordinate: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { point?: string; is?: string; };
-      indexedLineSet: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { coordIndex?: string; is?: string; };
+      'html': React.DetailedHTMLProps<Omit<React.HTMLAttributes<HTMLElement>, 'style'>, HTMLElement> & { is?: string; };
+      'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
+      'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { point?: string; is?: string; };
+      'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { coordIndex?: string; is?: string; };
     }
   }
 }
@@ -96,7 +96,8 @@ const Stars = ({ radius, count }: { radius: number; count: number }) => {
 
 const Scene: React.FC = () => {
   const rootRef = useRef<ReactDOM.Root | null>(null);
-  const htmlRef = useRef<HTMLElement>(null);
+  // FIX: Changed useRef type to 'any' to resolve type conflict with React's built-in <html /> element definition.
+  const htmlRef = useRef<any>(null);
   
   // Effect to initialize X_ITE after React has rendered the custom elements.
   useEffect(() => {
@@ -161,7 +162,7 @@ const Scene: React.FC = () => {
         <scene is="x3d" profile="Immersive">
           <component is="x3d" name="HTML" level="1" />
           <background is="x3d" skyColor='0.0 0.0 0.0' />
-          <navigationInfo is="x3d" type="EXAMINE ANY" />
+          <navigationInfo is="x3d" type="&quot;EXAMINE&quot; &quot;ANY&quot;" />
           <viewpoint is="x3d" position={viewpointPosition} />
           
           <pointLight is="x3d" location='0 3 4' intensity='0.8' ambientIntensity='0.25' color='0.4 0.9 0.95' />
