@@ -21,6 +21,7 @@ const appState = {
 
 // --- DOM CONTAINERS ---
 let navContainer, listContainer, detailContainer, modalContainer, modalLayer;
+let modalBackdropElement = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     navContainer = document.getElementById('nav-container');
@@ -83,7 +84,13 @@ function renderNav() {
         el.addEventListener('click', () => {
              const view = el.dataset.view;
              if (appState.activeView !== view) {
-                setState({ activeView: view, selectedContactId: null, selectedMeetingId: null });
+                const firstContactId = appState.contacts[0]?.id || null;
+                const firstMeetingId = appState.meetings[0]?.id || null;
+                setState({ 
+                    activeView: view, 
+                    selectedContactId: view === ViewType.CONTACTS ? firstContactId : null, 
+                    selectedMeetingId: view === ViewType.MEETINGS ? firstMeetingId : null 
+                });
              }
         });
     });
@@ -337,7 +344,7 @@ async function handleGenerateBriefing() {
     
     // Re-render detail view with loading state
     detailContainer.innerHTML = `<div class="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 h-full w-full">${renderMeetingDetail(null, true, null)}</div>`;
-    document.getElementById('generate-briefing-btn')?.addEventListener('click', handleGenerateBriefing); // Re-attach listener
+    addDetailEventListeners();
     
     try {
       const result = await generateMeetingBriefing(meeting, meetingContacts);
@@ -346,11 +353,16 @@ async function handleGenerateBriefing() {
       console.error(e);
       detailContainer.innerHTML = `<div class="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 h-full w-full">${renderMeetingDetail(null, false, 'Failed to generate briefing. Please try again.')}</div>`;
     } finally {
-        // Re-attach all listeners for the detail view
-        const updatedMeeting = appState.meetings.find(m => m.id === appState.selectedMeetingId);
-        document.getElementById('edit-meeting-btn')?.addEventListener('click', () => openEditMeetingModal(updatedMeeting));
+        addDetailEventListeners();
+    }
+}
+
+function addDetailEventListeners() {
+    if (appState.activeView === ViewType.MEETINGS && appState.selectedMeetingId) {
+        const meeting = appState.meetings.find(m => m.id === appState.selectedMeetingId);
+        document.getElementById('edit-meeting-btn')?.addEventListener('click', () => openEditMeetingModal(meeting));
         document.getElementById('delete-meeting-btn')?.addEventListener('click', () => deleteMeeting(appState.selectedMeetingId));
-        document.getElementById('manage-attendees-btn')?.addEventListener('click', () => openAttendeeModal(updatedMeeting));
+        document.getElementById('manage-attendees-btn')?.addEventListener('click', () => openAttendeeModal(meeting));
         document.getElementById('generate-briefing-btn')?.addEventListener('click', handleGenerateBriefing);
     }
 }
@@ -358,6 +370,12 @@ async function handleGenerateBriefing() {
 
 function renderModal() {
     const { modal } = appState;
+    
+    if (modalBackdropElement) {
+        modalBackdropElement.remove();
+        modalBackdropElement = null;
+    }
+    
     if (!modal.isOpen) {
         modalContainer.innerHTML = '';
         return;
@@ -378,22 +396,36 @@ function renderModal() {
     }
     
     modalContainer.innerHTML = `
-      <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" id="modal-backdrop">
-        <div class="bg-gray-800 border border-gray-600 rounded-2xl shadow-2xl shadow-cyan-500/10 w-full max-w-lg text-gray-200">
-            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <div class="bg-gray-800 border border-gray-600 rounded-2xl shadow-2xl shadow-cyan-500/10 w-full h-full flex flex-col text-gray-200">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
               <h2 class="text-xl font-bold">${title}</h2>
               <button id="close-modal-btn" class="p-1 rounded-full hover:bg-gray-700 transition-colors" aria-label="Close modal">
                 ${Icons.XMarkIcon({className: "h-6 w-6"})}
               </button>
             </div>
-            <div class="p-6">${formContent}</div>
+            <div class="p-6 overflow-y-auto flex-grow">${formContent}</div>
         </div>
-      </div>
     `;
+
+    // Create and append the backdrop to the body
+    modalBackdropElement = document.createElement('div');
+    modalBackdropElement.className = "fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in";
+    modalBackdropElement.id = 'modal-backdrop';
+    document.body.appendChild(modalBackdropElement);
+
+    // Stop propagation on the 3D canvas so clicks don't go through the modal
+    const canvas = document.getElementById('x3d-canvas-element');
+    if (canvas) canvas.style.pointerEvents = 'none';
+
+    // Move the modal layer itself into the backdrop
+    modalLayer.style.position = 'relative';
+    modalLayer.style.zIndex = '60';
+    modalBackdropElement.appendChild(modalLayer);
+
     
     // Add event listeners for modal
-    document.getElementById('modal-backdrop').addEventListener('click', closeModal);
-    modalContainer.querySelector('.bg-gray-800').addEventListener('click', e => e.stopPropagation());
+    modalBackdropElement.addEventListener('click', closeModal);
+    modalLayer.addEventListener('click', e => e.stopPropagation());
     document.getElementById('close-modal-btn').addEventListener('click', closeModal);
     document.getElementById('cancel-btn')?.addEventListener('click', closeModal);
 
@@ -513,7 +545,19 @@ function handleAttendeeSave() {
 }
 
 function updateModalVisibility() {
-    modalLayer.setAttribute('render', appState.modal.isOpen.toString());
+    const shouldBeOpen = appState.modal.isOpen;
+    modalLayer.setAttribute('render', shouldBeOpen.toString());
+    
+    // Manage backdrop
+    if (shouldBeOpen && !modalBackdropElement) {
+        // This case is handled in renderModal
+    } else if (!shouldBeOpen && modalBackdropElement) {
+        modalBackdropElement.remove();
+        modalBackdropElement = null;
+        // Re-enable pointer events on the canvas
+        const canvas = document.getElementById('x3d-canvas-element');
+        if (canvas) canvas.style.pointerEvents = 'auto';
+    }
 }
 
 
@@ -562,7 +606,10 @@ function deleteContact(contactId) {
             ...m,
             attendees: m.attendees.filter(id => id !== contactId)
         }));
-        const newSelectedId = appState.selectedContactId === contactId ? null : appState.selectedContactId;
+        let newSelectedId = appState.selectedContactId;
+        if (newSelectedId === contactId) {
+             newSelectedId = newContacts[0]?.id || null;
+        }
         setState({ contacts: newContacts, meetings: newMeetings, selectedContactId: newSelectedId });
     }
 }
@@ -587,7 +634,10 @@ function saveMeeting(meetingData) {
 function deleteMeeting(meetingId) {
     if (window.confirm("Are you sure you want to delete this meeting?")) {
         const newMeetings = appState.meetings.filter(m => m.id !== meetingId);
-        const newSelectedId = appState.selectedMeetingId === meetingId ? null : appState.selectedMeetingId;
+        let newSelectedId = appState.selectedMeetingId;
+        if (newSelectedId === meetingId) {
+             newSelectedId = newMeetings[0]?.id || null;
+        }
         setState({ meetings: newMeetings, selectedMeetingId: newSelectedId });
     }
 }
