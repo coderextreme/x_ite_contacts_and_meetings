@@ -11,7 +11,6 @@ declare const x_ite: {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      // FIX: Using quoted keys for all custom elements to ensure TypeScript recognizes them.
       'component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { name?: string; level?: string; is?: string; };
       'x3d-canvas': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'x3d': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
@@ -28,7 +27,8 @@ declare global {
       'material': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { transparency?: string; emissiveColor?: string; is?: string; };
       // The X3D 'html' tag is a custom element. By omitting the 'style' attribute from React's default
       // HTML attributes, we prevent the object-vs-string type conflict that was causing the crash.
-      'html': React.DetailedHTMLProps<Omit<React.HTMLAttributes<HTMLElement>, 'style'>, HTMLElement> & { is?: string; };
+      // FIX: Corrected the element type to HTMLHtmlElement to resolve conflict with the built-in 'html' tag, enabling all custom element types to be recognized.
+      'html': React.DetailedHTMLProps<Omit<React.HTMLAttributes<HTMLHtmlElement>, 'style'>, HTMLHtmlElement> & { is?: string; };
       'pointSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { is?: string; };
       'coordinate': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { point?: string; is?: string; };
       'indexedLineSet': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { coordIndex?: string; is?: string; };
@@ -96,8 +96,8 @@ const Stars = ({ radius, count }: { radius: number; count: number }) => {
 
 const Scene: React.FC = () => {
   const rootRef = useRef<ReactDOM.Root | null>(null);
-  // FIX: Changed useRef type to 'any' to resolve type conflict with React's built-in <html /> element definition.
-  const htmlRef = useRef<any>(null);
+  // FIX: The ref for the custom 'html' tag needs to match the corrected element type (HTMLHtmlElement) in the JSX declaration.
+  const htmlRef = useRef<HTMLHtmlElement>(null);
   
   // Effect to initialize X_ITE after React has rendered the custom elements.
   useEffect(() => {
@@ -162,7 +162,8 @@ const Scene: React.FC = () => {
         <scene is="x3d" profile="Immersive">
           <component is="x3d" name="HTML" level="1" />
           <background is="x3d" skyColor='0.0 0.0 0.0' />
-          <navigationInfo is="x3d" type="&quot;EXAMINE&quot; &quot;ANY&quot;" />
+          {/* CORRECTED: The type attribute needs to be a simple space-separated string. */}
+          <navigationInfo is="x3d" type="EXAMINE ANY" />
           <viewpoint is="x3d" position={viewpointPosition} />
           
           <pointLight is="x3d" location='0 3 4' intensity='0.8' ambientIntensity='0.25' color='0.4 0.9 0.95' />
@@ -176,7 +177,7 @@ const Scene: React.FC = () => {
                           <material is="x3d" transparency='1' />
                       </appearance>
                   </shape>
-                  {/* The style attribute is now added via useEffect to prevent React from throwing an error. */}
+                  {/* CORRECTED: The HTML tag for the app is now uncommented. */}
                   <html is="x3d" ref={htmlRef}>
                       {/* React app mounts into the div created here by X_ITE */}
                   </html>
