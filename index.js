@@ -85,7 +85,7 @@ function renderNav() {
              const view = el.dataset.view;
              if (appState.activeView !== view) {
                 const firstContactId = appState.contacts[0]?.id || null;
-                const firstMeetingId = appState.meetings[0]?.id || null;
+                const firstMeetingId = appState.meetings.sort((a, b) => a.time - b.time)[0]?.id || null;
                 setState({ 
                     activeView: view, 
                     selectedContactId: view === ViewType.CONTACTS ? firstContactId : null, 
@@ -145,6 +145,7 @@ function renderContactList() {
 
 function renderMeetingList() {
     const { meetings, selectedMeetingId } = appState;
+    const sortedMeetings = [...meetings].sort((a, b) => a.time - b.time);
     const formatDate = (date) => new Intl.DateTimeFormat('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: true }).format(date);
     
     listContainer.innerHTML = `
@@ -156,7 +157,7 @@ function renderMeetingList() {
                 </button>
             </div>
             <div class="p-4 space-y-3 overflow-y-auto custom-scrollbar">
-            ${meetings.map(meeting => `
+            ${sortedMeetings.map(meeting => `
                 <div class="w-full text-left p-3 rounded-lg transition-all duration-200 border-2 cursor-pointer ${
                     selectedMeetingId === meeting.id
                     ? 'bg-cyan-500/30 border-cyan-400 shadow-lg shadow-cyan-500/20'
@@ -192,20 +193,10 @@ function renderDetail() {
         content = renderMeetingDetail();
     }
     
-    detailContainer.innerHTML = `<div class="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 h-full w-full">${content}</div>`;
+    detailContainer.innerHTML = `<div class="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6 h-full w-full overflow-hidden">${content}</div>`;
     
     // Add event listeners for buttons inside the detail panel
-    if (activeView === ViewType.CONTACTS && selectedContactId) {
-        document.getElementById('edit-contact-btn')?.addEventListener('click', () => openEditContactModal(appState.contacts.find(c => c.id === selectedContactId)));
-        document.getElementById('delete-contact-btn')?.addEventListener('click', () => deleteContact(selectedContactId));
-    }
-    if (activeView === ViewType.MEETINGS && selectedMeetingId) {
-        const meeting = appState.meetings.find(m => m.id === selectedMeetingId);
-        document.getElementById('edit-meeting-btn')?.addEventListener('click', () => openEditMeetingModal(meeting));
-        document.getElementById('delete-meeting-btn')?.addEventListener('click', () => deleteMeeting(selectedMeetingId));
-        document.getElementById('manage-attendees-btn')?.addEventListener('click', () => openAttendeeModal(meeting));
-        document.getElementById('generate-briefing-btn')?.addEventListener('click', handleGenerateBriefing);
-    }
+    addDetailEventListeners();
 }
 
 function renderContactDetail() {
@@ -253,7 +244,7 @@ function renderMeetingDetail(briefingData = null, isLoading = false, error = nul
     
     let briefingContent = '';
     if (isLoading) {
-        briefingContent = `<div class="flex justify-center items-center h-full">${Icons.LoadingSpinner()}</div>`;
+        briefingContent = `<div class="flex justify-center items-center h-full">${Icons.LoadingSpinner({className: 'h-8 w-8 text-cyan-400'})}</div>`;
     } else if (error) {
         briefingContent = `<p class="text-red-400">${error}</p>`;
     } else if (briefingData) {
@@ -325,7 +316,7 @@ function renderMeetingDetail(briefingData = null, isLoading = false, error = nul
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-cyan-300 flex items-center">${Icons.SparklesIcon({className:"h-6 w-6 mr-2"})} AI Briefing</h2>
                     <button id="generate-briefing-btn" ${isLoading ? 'disabled' : ''} class="flex items-center bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 flex-shrink-0">
-                        ${isLoading ? Icons.LoadingSpinner() : Icons.SparklesIcon({className:"h-5 w-5 mr-2"})}
+                        ${isLoading ? Icons.LoadingSpinner({className: 'h-5 w-5'}) : Icons.SparklesIcon({className:"h-5 w-5 mr-2"})}
                         ${isLoading ? 'Generating...' : 'Generate'}
                     </button>
                 </div>
@@ -358,6 +349,10 @@ async function handleGenerateBriefing() {
 }
 
 function addDetailEventListeners() {
+    if (appState.activeView === ViewType.CONTACTS && appState.selectedContactId) {
+        document.getElementById('edit-contact-btn')?.addEventListener('click', () => openEditContactModal(appState.contacts.find(c => c.id === appState.selectedContactId)));
+        document.getElementById('delete-contact-btn')?.addEventListener('click', () => deleteContact(appState.selectedContactId));
+    }
     if (appState.activeView === ViewType.MEETINGS && appState.selectedMeetingId) {
         const meeting = appState.meetings.find(m => m.id === appState.selectedMeetingId);
         document.getElementById('edit-meeting-btn')?.addEventListener('click', () => openEditMeetingModal(meeting));
@@ -370,11 +365,6 @@ function addDetailEventListeners() {
 
 function renderModal() {
     const { modal } = appState;
-    
-    if (modalBackdropElement) {
-        modalBackdropElement.remove();
-        modalBackdropElement = null;
-    }
     
     if (!modal.isOpen) {
         modalContainer.innerHTML = '';
@@ -403,29 +393,11 @@ function renderModal() {
                 ${Icons.XMarkIcon({className: "h-6 w-6"})}
               </button>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow">${formContent}</div>
+            <div class="p-6 overflow-y-auto flex-grow custom-scrollbar">${formContent}</div>
         </div>
     `;
-
-    // Create and append the backdrop to the body
-    modalBackdropElement = document.createElement('div');
-    modalBackdropElement.className = "fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in";
-    modalBackdropElement.id = 'modal-backdrop';
-    document.body.appendChild(modalBackdropElement);
-
-    // Stop propagation on the 3D canvas so clicks don't go through the modal
-    const canvas = document.getElementById('x3d-canvas-element');
-    if (canvas) canvas.style.pointerEvents = 'none';
-
-    // Move the modal layer itself into the backdrop
-    modalLayer.style.position = 'relative';
-    modalLayer.style.zIndex = '60';
-    modalBackdropElement.appendChild(modalLayer);
-
     
     // Add event listeners for modal
-    modalBackdropElement.addEventListener('click', closeModal);
-    modalLayer.addEventListener('click', e => e.stopPropagation());
     document.getElementById('close-modal-btn').addEventListener('click', closeModal);
     document.getElementById('cancel-btn')?.addEventListener('click', closeModal);
 
@@ -547,16 +519,22 @@ function handleAttendeeSave() {
 function updateModalVisibility() {
     const shouldBeOpen = appState.modal.isOpen;
     modalLayer.setAttribute('render', shouldBeOpen.toString());
-    
-    // Manage backdrop
+
+    // Manage backdrop separately in the 2D document body
     if (shouldBeOpen && !modalBackdropElement) {
-        // This case is handled in renderModal
+        modalBackdropElement = document.createElement('div');
+        modalBackdropElement.className = "fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fade-in";
+        modalBackdropElement.id = 'modal-backdrop';
+        // Add a click handler to close the modal, but don't let clicks on the 3D canvas itself close it.
+        modalBackdropElement.addEventListener('click', () => closeModal());
+        document.body.appendChild(modalBackdropElement);
+        // Prevent clicks on the canvas from propagating to the backdrop
+        const canvas = document.getElementById('x3d-canvas-element');
+        if(canvas) canvas.addEventListener('click', (e) => e.stopPropagation());
+
     } else if (!shouldBeOpen && modalBackdropElement) {
         modalBackdropElement.remove();
         modalBackdropElement = null;
-        // Re-enable pointer events on the canvas
-        const canvas = document.getElementById('x3d-canvas-element');
-        if (canvas) canvas.style.pointerEvents = 'auto';
     }
 }
 
@@ -596,7 +574,7 @@ function saveContact(contactData) {
         newSelectedId = newContact.id;
     }
     closeModal();
-    setState({ contacts: newContacts, selectedContactId: newSelectedId });
+    setState({ contacts: newContacts, selectedContactId: newSelectedId, activeView: ViewType.CONTACTS });
 }
 
 function deleteContact(contactId) {
@@ -628,7 +606,7 @@ function saveMeeting(meetingData) {
         newSelectedId = newMeeting.id;
     }
     closeModal();
-    setState({ meetings: newMeetings, selectedMeetingId: newSelectedId });
+    setState({ meetings: newMeetings, selectedMeetingId: newSelectedId, activeView: ViewType.MEETINGS });
 }
 
 function deleteMeeting(meetingId) {
@@ -636,7 +614,7 @@ function deleteMeeting(meetingId) {
         const newMeetings = appState.meetings.filter(m => m.id !== meetingId);
         let newSelectedId = appState.selectedMeetingId;
         if (newSelectedId === meetingId) {
-             newSelectedId = newMeetings[0]?.id || null;
+             newSelectedId = newMeetings.sort((a,b) => a.time - b.time)[0]?.id || null;
         }
         setState({ meetings: newMeetings, selectedMeetingId: newSelectedId });
     }
